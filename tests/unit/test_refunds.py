@@ -25,3 +25,25 @@ def test_refund_unknown_charge(client):
 
 def test_list_refunds_unknown_charge(client):
     assert client.get("/charges/ch_0000000000000000/refunds").status_code == 404
+
+
+def test_refund_summary_before_any_refund(client, charge):
+    body = client.get(f"/charges/{charge['id']}/refund-summary").json()
+    assert body == {
+        "charge_id": charge["id"],
+        "refund_count": 0,
+        "refunded_cents": 0,
+        "remaining_cents": 5000,
+    }
+
+
+def test_refund_summary_after_full_refund(client, charge):
+    client.post(f"/charges/{charge['id']}/refund")
+    body = client.get(f"/charges/{charge['id']}/refund-summary").json()
+    assert body["refund_count"] == 1
+    assert body["refunded_cents"] == 5000
+    assert body["remaining_cents"] == 0
+
+
+def test_refund_summary_unknown_charge(client):
+    assert client.get("/charges/ch_0000000000000000/refund-summary").status_code == 404
